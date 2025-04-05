@@ -1,125 +1,29 @@
-// CppShell.cpp - Main shell class implementation
+// Update CppShell.cpp to use the parser
 
 #include "CppShell.h"
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
+#include <filesystem>
 #include <signal.h>
 
-// #include <filesystem> -- below is the replacement of this library
-#ifdef _WIN32
-#include <direct.h>
-#define getcwd _getcwd
-#else
-#include <unistd.h>
-#endif
-
-
-// Static instance for signal handling
-static CppShell* g_shellInstance = nullptr;
-
-// Signal handler
-void signalHandler(int sig) {
-    if (g_shellInstance != nullptr) {
-        if (sig == SIGINT) {
-            std::cout << "\n" << config::DEFAULT_PROMPT;
-            std::cout.flush();
-        }
-    }
-}
-
-CppShell::CppShell() :
-    m_prompt(config::DEFAULT_PROMPT),
-    m_running(false) {
-
-    // Set up history file path
-    const char* homeDir = getenv("USERPROFILE");
-    if (homeDir != nullptr) {
-        m_historyFile = std::string(homeDir) + "/" + config::HISTORY_FILE;
-    }
-    else {
-        m_historyFile = config::HISTORY_FILE;
-    }
-
-    // Set global instance for signal handling
-    g_shellInstance = this;
-}
-
-CppShell::~CppShell() {
-    g_shellInstance = nullptr;
-}
-
-bool CppShell::initialize() {
-    // Set up signal handlers
-    signal(SIGINT, signalHandler);  // Handle Ctrl+C
-
-    // Load command history
-    loadHistory();
-
-    // Display welcome message
-    std::cout << config::SHELL_NAME << " v" << config::VERSION << std::endl;
-    std::cout << "Type 'help' for a list of commands or 'exit' to quit." << std::endl;
-
-    return true;
-}
-
-int CppShell::run() {
-    m_running = true;
-
-    while (m_running) {
-        // Display prompt
-        displayPrompt();
-
-        // Read user input
-        std::string commandLine = readLine();
-
-        // Skip empty lines
-        if (commandLine.empty()) {
-            continue;
-        }
-
-        // Add to history
-        addToHistory(commandLine);
-
-        // Process the command
-        if (!processCommand(commandLine)) {
-            // Handle command errors
-        }
-    }
-
-    return 0;
-}
-
-void CppShell::shutdown() {
-    // Save command history
-    saveHistory();
-
-    std::cout << "Goodbye!" << std::endl;
-}
-
-std::string CppShell::readLine() {
-    std::string line;
-    std::getline(std::cin, line);
-
-    // Check for EOF (Ctrl+D)
-    if (std::cin.eof()) {
-        m_running = false;
-        std::cout << std::endl;
-        return "exit";
-    }
-
-    return line;
-}
-
-void CppShell::displayPrompt() {
-    std::cout << m_prompt;
-    std::cout.flush();
-}
+// ... (existing code)
 
 bool CppShell::processCommand(const std::string& commandLine) {
-    // This is a placeholder implementation that will be expanded
-    // in the Command Parsing and Execution components
+    try {
+        return parseAndExecuteCommand(commandLine);
+    }
+    catch (const ParseError& e) {
+        std::cerr << e.what() << std::endl;
+        return false;
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return false;
+    }
+}
 
+bool CppShell::parseAndExecuteCommand(const std::string& commandLine) {
     // Basic built-in commands for now
     if (commandLine == "exit" || commandLine == "quit") {
         m_running = false;
@@ -131,58 +35,29 @@ bool CppShell::processCommand(const std::string& commandLine) {
         std::cout << "  exit - Exit the shell" << std::endl;
         return true;
     }
-    else {
-        // For now, just echo the command
-        std::cout << "Command not implemented: " << commandLine << std::endl;
-        return true;
+
+    // Parse the command
+    Parser parser(commandLine);
+    std::shared_ptr<Command> command;
+
+    try {
+        command = parser.parse();
     }
-}
-
-void CppShell::addToHistory(const std::string& command) {
-    // Don't add empty commands or duplicates of the last command
-    if (command.empty() || (!m_history.empty() && m_history.back() == command)) {
-        return;
-    }
-
-    m_history.push_back(command);
-
-    // Limit history size
-    if (m_history.size() > config::MAX_HISTORY_SIZE) {
-        m_history.pop_front();
-    }
-}
-
-bool CppShell::loadHistory() {
-    std::ifstream historyFile(m_historyFile);
-    if (!historyFile.is_open()) {
+    catch (const ParseError& e) {
+        std::cerr << e.what() << std::endl;
         return false;
     }
 
-    std::string line;
-    while (std::getline(historyFile, line)) {
-        if (!line.empty()) {
-            m_history.push_back(line);
-        }
-    }
+    // Print the parsed command (for debugging)
+    std::cout << "Parsed command: " << command->toString() << std::endl;
 
-    // Limit history size
-    while (m_history.size() > config::MAX_HISTORY_SIZE) {
-        m_history.pop_front();
-    }
-
+    // In Component 2, we just parse the command but don't execute it yet
+    // This will be implemented in Component 3
+    std::cout << "Command execution not implemented yet." << std::endl;
     return true;
 }
 
-bool CppShell::saveHistory() {
-    std::ofstream historyFile(m_historyFile);
-    if (!historyFile.is_open()) {
-        std::cerr << "Warning: Could not save command history." << std::endl;
-        return false;
-    }
-
-    for (const auto& cmd : m_history) {
-        historyFile << cmd << std::endl;
-    }
-
+bool CppShell::executeCommand(const std::shared_ptr<Command>& command) {
+    // This will be implemented in Component 3
     return true;
 }

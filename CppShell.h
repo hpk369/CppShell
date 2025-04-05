@@ -1,9 +1,10 @@
-// CppShell.h - Main shell class declaration
+// Update CppShell.h to include the parser
 
 #ifndef CPP_SHELL_H
 #define CPP_SHELL_H
 
 #include "ShellConfig.h"
+#include "Parser.h"
 #include <string>
 #include <vector>
 #include <deque>
@@ -31,6 +32,12 @@ private:
 
     // Process a command line
     bool processCommand(const std::string& commandLine);
+
+    // Parse and execute a command
+    bool parseAndExecuteCommand(const std::string& commandLine);
+
+    // Execute a parsed command
+    bool executeCommand(const std::shared_ptr<Command>& command);
 
     // Add a command to history
     void addToHistory(const std::string& command);
